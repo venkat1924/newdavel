@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network Visualization Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--dark), #16213e);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            background: var(--card-bg);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-header {
+            padding: 20px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+        
+        .card-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .card-header p {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        .card-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .visualization {
+            height: 250px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .visualization canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .card-footer {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--secondary);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+        }
+        
+        /* Animation for cards */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        /* Delay animations for each card */
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+        .card:nth-child(6) { animation-delay: 0.6s; }
+        
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.8rem;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-viz {
+            height: 400px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-description {
+            line-height: 1.6;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Neural Network Visualization Gallery</h1>
+        <p>Interactive visualizations showing the inner workings of neural networks through dimensionality reduction, layer transitions, and training dynamics</p>
+    </div>
+    
+    <div class="controls">
+        <button class="filter-btn active" data-filter="all">All Visualizations</button>
+        <button class="filter-btn" data-filter="training">Training Dynamics</button>
+        <button class="filter-btn" data-filter="layer">Layer Transitions</button>
+        <button class="filter-btn" data-filter="projection">Projection Techniques</button>
+    </div>
+    
+    <div class="gallery">
+        <!-- Grand Tour Teaser -->
+        <div class="card" data-category="training">
+            <div class="card-header">
+                <h3>Grand Tour of Training</h3>
+                <p>Visualizing neural network training over epochs</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="training-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>Watch how the network learns to classify digits 1 and 7 in an almost discontinuous manner after specific training epochs.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="training">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="training">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Neural Network Architecture -->
+        <div class="card" data-category="layer">
+            <div class="card-header">
+                <h3>Network Architecture</h3>
+                <p>Visual breakdown of network layers</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="architecture-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>Explore the sequence of linear, convolutional, ReLU, and pooling layers that make up a modern neural network architecture.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="architecture">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="architecture">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loss History -->
+        <div class="card" data-category="training">
+            <div class="card-header">
+                <h3>Loss History</h3>
+                <p>Training and validation loss over epochs</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="loss-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>Observe the characteristic drops around epochs 14 and 21 where the network learns to recognize digits 1 and 7.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="loss">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="loss">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dimensionality Reduction -->
+        <div class="card" data-category="projection">
+            <div class="card-header">
+                <h3>Dimensionality Reduction</h3>
+                <p>Comparing projection techniques</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="projection-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>See how t-SNE, Dynamic t-SNE, and UMAP compare in visualizing high-dimensional activation spaces.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="projection">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="projection">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Class Confusion -->
+        <div class="card" data-category="training">
+            <div class="card-header">
+                <h3>Class Confusion</h3>
+                <p>Visualizing classification challenges</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="confusion-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>Explore how the model confuses similar classes like sandals, sneakers and ankle boots in Fashion-MNIST.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="confusion">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="confusion">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Adversarial Examples -->
+        <div class="card" data-category="layer">
+            <div class="card-header">
+                <h3>Adversarial Dynamics</h3>
+                <p>How adversarial examples fool networks</p>
+            </div>
+            <div class="card-content">
+                <div class="visualization" id="adversarial-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                <p>See how carefully crafted perturbations cause digit 8s to be misclassified as 0s by the network.</p>
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <button class="btn view-btn" data-viz="adversarial">View Live</button>
+                    <button class="btn btn-outline details-btn" data-viz="adversarial">Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Neural Network Visualization Gallery | Created with D3.js and WebGL | Based on "Visualizing Neural Networks with the Grand Tour"</p>
+    </div>
+    
+    <!-- Modal Structure -->
+    <div class="modal" id="viz-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Visualization Title</h2>
+                <button class="close-btn" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-viz" id="modal-viz-container">
+                    <!-- Full-size visualization will be rendered here -->
+                </div>
+                <div class="modal-description" id="modal-description">
+                    <!-- Description will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="modal-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Visualization descriptions
+        const vizDescriptions = {
+            training: {
+                title: "Grand Tour of Training",
+                description: "This visualization shows the behavior of the final 10-dimensional layer of a neural network as it is trained on the MNIST dataset. With this technique, it is possible to see interesting training behavior. For example, the network appears to learn to classify digits 1 and 7 in an almost discontinuous manner after specific training epochs."
+            },
+            architecture: {
+                title: "Network Architecture",
+                description: "A functional diagram of the neural network used throughout the article. The neural network is a sequence of linear (both convolutional and fully-connected), max-pooling, and ReLU layers, culminating in a softmax layer."
+            },
+            loss: {
+                title: "Loss History",
+                description: "A line plot of the training loss for the MNIST classifier. The curve shows characteristic drops around epochs 14 and 21 where the network learns to recognize digits 1 and 7 respectively. The per-class loss chart reveals that the model learns different classes at very different times in the training process."
+            },
+            projection: {
+                title: "Dimensionality Reduction",
+                description: "Comparison of t-SNE, Dynamic t-SNE, and UMAP projections of the epochs where interesting phenomena happen. These modern dimensionality reduction techniques provide two-dimensional images where similar points tend to be clustered together effectively, but can make it hard to notice class-specific behavior during training."
+            },
+            confusion: {
+                title: "Class Confusion",
+                description: "Visualization of how the model confuses similar classes like sandals, sneakers and ankle boots in Fashion-MNIST. A carefully-constructed linear projection can offer a better visualization of the classifier behavior than non-linear methods, clearly showing three-way confusion patterns."
+            },
+            adversarial: {
+                title: "Adversarial Dynamics",
+                description: "Visualization of how adversarial examples are crafted and how they fool a neural network. For this illustration, we adversarially add perturbations to digit 8s to fool the network into thinking they are 0s. The Grand Tour provides a natural way to visualize how these adversarial examples evolve to fool the network."
+            }
+        };
+
+        // Initialize the gallery
+        document.addEventListener('DOMContentLoaded', function() {
+            // Render all visualizations
+            renderTrainingViz();
+            renderArchitectureViz();
+            renderLossViz();
+            renderProjectionViz();
+            renderConfusionViz();
+            renderAdversarialViz();
+            
+            // Set up filter buttons
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    const filter = this.getAttribute('data-filter');
+                    const cards = document.querySelectorAll('.card');
+                    
+                    cards.forEach(card => {
+                        if (filter === 'all' || card.getAttribute('data-category') === filter) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            // Set up view buttons
+            document.querySelectorAll('.view-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const vizId = this.getAttribute('data-viz');
+                    openModal(vizId);
+                });
+            });
+            
+            // Set up details buttons
+            document.querySelectorAll('.details-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const vizId = this.getAttribute('data-viz');
+                    showDetails(vizId);
+                });
+            });
+            
+            // Set up modal close buttons
+            document.getElementById('modal-close').addEventListener('click', closeModal);
+            document.getElementById('modal-ok').addEventListener('click', closeModal);
+        });
+        
+        // Open modal with visualization
+        function openModal(vizId) {
+            const modal = document.getElementById('viz-modal');
+            const title = document.getElementById('modal-title');
+            const container = document.getElementById('modal-viz-container');
+            const description = document.getElementById('modal-description');
+            
+            // Set modal content
+            title.textContent = vizDescriptions[vizId].title;
+            description.textContent = vizDescriptions[vizId].description;
+            
+            // Clear previous visualization
+            container.innerHTML = '';
+            
+            // Create canvas for visualization
+            const canvas = document.createElement('div');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            container.appendChild(canvas);
+            
+            // Render appropriate visualization
+            switch(vizId) {
+                case 'training':
+                    renderTrainingViz(canvas, true);
+                    break;
+                case 'architecture':
+                    renderArchitectureViz(canvas, true);
+                    break;
+                case 'loss':
+                    renderLossViz(canvas, true);
+                    break;
+                case 'projection':
+                    renderProjectionViz(canvas, true);
+                    break;
+                case 'confusion':
+                    renderConfusionViz(canvas, true);
+                    break;
+                case 'adversarial':
+                    renderAdversarialViz(canvas, true);
+                    break;
+            }
+            
+            // Show modal
+            modal.classList.add('active');
+        }
+        
+        // Show details in modal
+        function showDetails(vizId) {
+            const modal = document.getElementById('viz-modal');
+            const title = document.getElementById('modal-title');
+            const container = document.getElementById('modal-viz-container');
+            const description = document.getElementById('modal-description');
+            
+            // Set modal content
+            title.textContent = vizDescriptions[vizId].title;
+            description.textContent = vizDescriptions[vizId].description;
+            
+            // Clear visualization container
+            container.innerHTML = '<p class="modal-description" style="text-align:center; padding: 20px;">Detailed information about this visualization. In a full implementation, this would show technical details, methodology, and interpretation guidance.</p>';
+            
+            // Show modal
+            modal.classList.add('active');
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('viz-modal').classList.remove('active');
+        }
+        
+        // Visualization rendering functions
+        function renderTrainingViz(container = document.getElementById('training-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Create gradient background
+            const gradient = svg.append("defs")
+                .append("linearGradient")
+                .attr("id", "training-gradient")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "100%");
+                
+            gradient.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", "#6a11cb");
+                
+            gradient.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", "#2575fc");
+            
+            // Draw the background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "url(#training-gradient)")
+                .attr("opacity", 0.7);
+            
+            // Create training curve data
+            const data = [];
+            for (let i = 0; i <= 100; i++) {
+                const x = i;
+                // Loss function that decreases with some noise and drops
+                let y = 2.5 - (i / 100) * 2.0 + Math.random() * 0.1;
+                if (i > 13 && i < 15) y -= 0.4;
+                if (i > 19 && i < 22) y -= 0.6;
+                data.push({x, y});
+            }
+            
+            // Create scales
+            const xScale = d3.scaleLinear()
+                .domain([0, 100])
+                .range([40, width - 20]);
+                
+            const yScale = d3.scaleLinear()
+                .domain([0, 2.5])
+                .range([height - 40, 20]);
+            
+            // Draw axes
+            const xAxis = d3.axisBottom(xScale).ticks(5);
+            const yAxis = d3.axisLeft(yScale).ticks(5);
+            
+            svg.append("g")
+                .attr("transform", `translate(0, ${height - 40})`)
+                .call(xAxis)
+                .style("color", "rgba(255,255,255,0.7)");
+                
+            svg.append("g")
+                .attr("transform", "translate(40, 0)")
+                .call(yAxis)
+                .style("color", "rgba(255,255,255,0.7)");
+            
+            // Draw line
+            const line = d3.line()
+                .x(d => xScale(d.x))
+                .y(d => yScale(d.y))
+                .curve(d3.curveMonotoneX);
+            
+            svg.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "#ffffff")
+                .attr("stroke-width", 3)
+                .attr("d", line);
+            
+            // Add epoch markers
+            [14, 21].forEach(epoch => {
+                const point = data.find(d => d.x === epoch);
+                if (point) {
+                    svg.append("circle")
+                        .attr("cx", xScale(point.x))
+                        .attr("cy", yScale(point.y))
+                        .attr("r", 6)
+                        .attr("fill", "#ff7e5f");
+                }
+            });
+            
+            // Add labels
+            svg.append("text")
+                .attr("x", width/2)
+                .attr("y", height - 10)
+                .attr("text-anchor", "middle")
+                .attr("fill", "rgba(255,255,255,0.7)")
+                .text("Epochs");
+                
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height/2)
+                .attr("y", 15)
+                .attr("text-anchor", "middle")
+                .attr("fill", "rgba(255,255,255,0.7)")
+                .text("Loss");
+            
+            return svg.node();
+        }
+        
+        function renderArchitectureViz(container = document.getElementById('architecture-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Neural network layers
+            const layers = [
+                { name: "Input", type: "input", width: 60, height: 80 },
+                { name: "Conv 5x5", type: "conv", width: 50, height: 70 },
+                { name: "ReLU", type: "relu", width: 40, height: 30 },
+                { name: "Pool 2x2", type: "pool", width: 50, height: 60 },
+                { name: "Conv 5x5", type: "conv", width: 50, height: 70 },
+                { name: "ReLU", type: "relu", width: 40, height: 30 },
+                { name: "Pool 2x2", type: "pool", width: 50, height: 60 },
+                { name: "FC 128", type: "fc", width: 60, height: 100 },
+                { name: "ReLU", type: "relu", width: 40, height: 30 },
+                { name: "FC 10", type: "fc", width: 60, height: 100 },
+                { name: "Softmax", type: "softmax", width: 70, height: 120 }
+            ];
+            
+            // Position layers horizontally
+            const padding = 20;
+            const totalWidth = layers.reduce((sum, layer) => sum + layer.width + padding, -padding);
+            const startX = (width - totalWidth) / 2;
+            
+            let currentX = startX;
+            
+            layers.forEach((layer, i) => {
+                const y = height / 2 - layer.height / 2;
+                
+                // Draw layer box
+                const color = {
+                    input: "#ff7e5f",
+                    conv: "#2575fc",
+                    relu: "#6a11cb",
+                    pool: "#2ca02c",
+                    fc: "#d62728",
+                    softmax: "#9467bd"
+                }[layer.type];
+                
+                svg.append("rect")
+                    .attr("x", currentX)
+                    .attr("y", y)
+                    .attr("width", layer.width)
+                    .attr("height", layer.height)
+                    .attr("rx", 8)
+                    .attr("fill", color)
+                    .attr("opacity", 0.8);
+                
+                // Draw layer name
+                svg.append("text")
+                    .attr("x", currentX + layer.width / 2)
+                    .attr("y", y + layer.height / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("dy", "0.35em")
+                    .attr("fill", "white")
+                    .text(layer.name);
+                
+                // Draw connections to next layer
+                if (i < layers.length - 1) {
+                    const nextX = currentX + layer.width + padding;
+                    const nextY = height / 2;
+                    
+                    svg.append("line")
+                        .attr("x1", currentX + layer.width)
+                        .attr("y1", y + layer.height / 2)
+                        .attr("x2", nextX)
+                        .attr("y2", nextY)
+                        .attr("stroke", "rgba(255,255,255,0.5)")
+                        .attr("stroke-width", 2);
+                }
+                
+                currentX += layer.width + padding;
+            });
+            
+            return svg.node();
+        }
+        
+        function renderLossViz(container = document.getElementById('loss-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "#1a1a2e");
+            
+            // Create loss data
+            const data = [];
+            for (let i = 0; i <= 30; i++) {
+                const x = i;
+                // Loss function that decreases with some noise
+                const y = 2.5 - (i / 30) * 2.0 + Math.random() * 0.1;
+                data.push({x, y});
+            }
+            
+            // Create scales
+            const xScale = d3.scaleLinear()
+                .domain([0, 30])
+                .range([40, width - 20]);
+                
+            const yScale = d3.scaleLinear()
+                .domain([0, 2.5])
+                .range([height - 40, 20]);
+            
+            // Draw axes
+            const xAxis = d3.axisBottom(xScale).ticks(6);
+            const yAxis = d3.axisLeft(yScale).ticks(5);
+            
+            svg.append("g")
+                .attr("transform", `translate(0, ${height - 40})`)
+                .call(xAxis)
+                .style("color", "rgba(255,255,255,0.7)");
+                
+            svg.append("g")
+                .attr("transform", "translate(40, 0)")
+                .call(yAxis)
+                .style("color", "rgba(255,255,255,0.7)");
+            
+            // Draw line
+            const line = d3.line()
+                .x(d => xScale(d.x))
+                .y(d => yScale(d.y))
+                .curve(d3.curveMonotoneX);
+            
+            svg.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "#ff7e5f")
+                .attr("stroke-width", 3)
+                .attr("d", line);
+            
+            // Add epoch markers
+            [14, 21].forEach(epoch => {
+                const point = data.find(d => d.x === epoch);
+                if (point) {
+                    svg.append("circle")
+                        .attr("cx", xScale(point.x))
+                        .attr("cy", yScale(point.y))
+                        .attr("r", 6)
+                        .attr("fill", "#2575fc");
+                }
+            });
+            
+            // Add labels
+            svg.append("text")
+                .attr("x", width/2)
+                .attr("y", height - 10)
+                .attr("text-anchor", "middle")
+                .attr("fill", "rgba(255,255,255,0.7)")
+                .text("Epochs");
+                
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height/2)
+                .attr("y", 15)
+                .attr("text-anchor", "middle")
+                .attr("fill", "rgba(255,255,255,0.7)")
+                .text("Loss");
+            
+            return svg.node();
+        }
+        
+        function renderProjectionViz(container = document.getElementById('projection-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "#1a1a2e");
+            
+            // Create clusters for different projection methods
+            const methods = [
+                { name: "t-SNE", color: "#ff7e5f", offsetX: 0, offsetY: 0 },
+                { name: "Dynamic t-SNE", color: "#2575fc", offsetX: 0.3, offsetY: 0.3 },
+                { name: "UMAP", color: "#6a11cb", offsetX: 0.6, offsetY: 0.6 }
+            ];
+            
+            methods.forEach((method, i) => {
+                // Position the cluster
+                const clusterX = width * (i + 1) / (methods.length + 1);
+                const clusterY = height / 2;
+                
+                // Create points in the cluster
+                for (let j = 0; j < 50; j++) {
+                    const x = clusterX + (Math.random() - 0.5) * 100;
+                    const y = clusterY + (Math.random() - 0.5) * 100;
+                    
+                    svg.append("circle")
+                        .attr("cx", x)
+                        .attr("cy", y)
+                        .attr("r", 3)
+                        .attr("fill", method.color)
+                        .attr("opacity", 0.7);
+                }
+                
+                // Add method label
+                svg.append("text")
+                    .attr("x", clusterX)
+                    .attr("y", clusterY - 70)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", method.color)
+                    .text(method.name);
+            });
+            
+            return svg.node();
+        }
+        
+        function renderConfusionViz(container = document.getElementById('confusion-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "#1a1a2e");
+            
+            // Create three clusters with some overlap
+            const clusters = [
+                { name: "Sandals", color: "#ff7e5f", x: width * 0.3, y: height * 0.3 },
+                { name: "Sneakers", color: "#2575fc", x: width * 0.5, y: height * 0.5 },
+                { name: "Boots", color: "#6a11cb", x: width * 0.7, y: height * 0.3 }
+            ];
+            
+            clusters.forEach(cluster => {
+                // Create points in the cluster
+                for (let j = 0; j < 30; j++) {
+                    const x = cluster.x + (Math.random() - 0.5) * 80;
+                    const y = cluster.y + (Math.random() - 0.5) * 80;
+                    
+                    svg.append("circle")
+                        .attr("cx", x)
+                        .attr("cy", y)
+                        .attr("r", 4)
+                        .attr("fill", cluster.color)
+                        .attr("opacity", 0.7);
+                }
+                
+                // Add cluster label
+                svg.append("text")
+                    .attr("x", cluster.x)
+                    .attr("y", cluster.y - 50)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", cluster.color)
+                    .text(cluster.name);
+            });
+            
+            // Draw triangle connecting clusters
+            const triangle = [
+                [clusters[0].x, clusters[0].y],
+                [clusters[1].x, clusters[1].y],
+                [clusters[2].x, clusters[2].y],
+                [clusters[0].x, clusters[0].y]
+            ];
+            
+            const line = d3.line();
+            
+            svg.append("path")
+                .datum(triangle)
+                .attr("d", line)
+                .attr("fill", "none")
+                .attr("stroke", "rgba(255,255,255,0.3)")
+                .attr("stroke-width", 1);
+            
+            // Add points in the middle (confused points)
+            for (let j = 0; j < 15; j++) {
+                // Calculate position inside triangle
+                const u = Math.random();
+                const v = Math.random();
+                const w = 1 - u - v;
+                
+                if (w >= 0) {
+                    const x = u * clusters[0].x + v * clusters[1].x + w * clusters[2].x;
+                    const y = u * clusters[0].y + v * clusters[1].y + w * clusters[2].y;
+                    
+                    svg.append("circle")
+                        .attr("cx", x)
+                        .attr("cy", y)
+                        .attr("r", 4)
+                        .attr("fill", "white")
+                        .attr("opacity", 0.7);
+                }
+            }
+            
+            return svg.node();
+        }
+        
+        function renderAdversarialViz(container = document.getElementById('adversarial-viz'), isLarge = false) {
+            const width = isLarge ? 700 : 300;
+            const height = isLarge ? 400 : 200;
+            
+            const svg = d3.select(container || document.createElement('div'))
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Background
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "#1a1a2e");
+            
+            // Create two clusters (8s and 0s)
+            const cluster8 = { name: "Digit 8", color: "#ff7e5f", x: width * 0.3, y: height * 0.5 };
+            const cluster0 = { name: "Digit 0", color: "#2575fc", x: width * 0.7, y: height * 0.5 };
+            
+            // Create points in cluster 8
+            for (let j = 0; j < 40; j++) {
+                const x = cluster8.x + (Math.random() - 0.5) * 70;
+                const y = cluster8.y + (Math.random() - 0.5) * 70;
+                
+                svg.append("circle")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("r", 4)
+                    .attr("fill", cluster8.color)
+                    .attr("opacity", 0.7);
+            }
+            
+            // Create points in cluster 0
+            for (let j = 0; j < 40; j++) {
+                const x = cluster0.x + (Math.random() - 0.5) * 70;
+                const y = cluster0.y + (Math.random() - 0.5) * 70;
+                
+                svg.append("circle")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("r", 4)
+                    .attr("fill", cluster0.color)
+                    .attr("opacity", 0.7);
+            }
+            
+            // Add cluster labels
+            svg.append("text")
+                .attr("x", cluster8.x)
+                .attr("y", cluster8.y - 50)
+                .attr("text-anchor", "middle")
+                .attr("fill", cluster8.color)
+                .text(cluster8.name);
+                
+            svg.append("text")
+                .attr("x", cluster0.x)
+                .attr("y", cluster0.y - 50)
+                .attr("text-anchor", "middle")
+                .attr("fill", cluster0.color)
+                .text(cluster0.name);
+            
+            // Create adversarial examples moving from 8 to 0
+            for (let j = 0; j < 8; j++) {
+                const startX = cluster8.x + (Math.random() - 0.5) * 50;
+                const startY = cluster8.y + (Math.random() - 0.5) * 50;
+                const endX = cluster0.x + (Math.random() - 0.5) * 50;
+                const endY = cluster0.y + (Math.random() - 0.5) * 50;
+                
+                // Draw line
+                svg.append("line")
+                    .attr("x1", startX)
+                    .attr("y1", startY)
+                    .attr("x2", endX)
+                    .attr("y2", endY)
+                    .attr("stroke", "rgba(255,255,255,0.2)")
+                    .attr("stroke-width", 1);
+                
+                // Draw moving circle
+                const circle = svg.append("circle")
+                    .attr("cx", startX)
+                    .attr("cy", startY)
+                    .attr("r", 4)
+                    .attr("fill", "white")
+                    .attr("opacity", 0.9);
+                
+                // Animate the circle
+                circle.transition()
+                    .duration(2000)
+                    .delay(j * 300)
+                    .attr("cx", endX)
+                    .attr("cy", endY)
+                    .on("end", function() {
+                        circle.transition()
+                            .duration(2000)
+                            .attr("cx", startX)
+                            .attr("cy", startY);
+                    })
+                    .on("start", function repeat() {
+                        circle.transition()
+                            .duration(2000)
+                            .attr("cx", endX)
+                            .attr("cy", endY)
+                            .transition()
+                            .duration(2000)
+                            .attr("cx", startX)
+                            .attr("cy", startY)
+                            .on("end", repeat);
+                    });
+            }
+            
+            return svg.node();
+        }
+    </script>
+</body>
+</html>
