@@ -1,0 +1,26 @@
+{
+  "name": "differentiable-parameterizations",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0",
+    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
+    "profile": "cross-env NODE_ENV=production webpack --profile --json > webpack-stats.json"
+  },
+  "dependencies": {
+    "copy-webpack-plugin": "^13.0.0",
+    "cross-env": "^5.2.0",
+    "css-loader": "^7.1.2",
+    "eases-jsnext": "^1.0.10",
+    "html-webpack-plugin": "^5.6.3",
+    "lucid-components": "0.0.6",
+    "npm": "^11.4.1",
+    "raw-loader": "^0.5.1",
+    "svg-inline-loader": "^0.8.0"
+  },
+  "devDependencies": {
+    "file-loader": "^6.2.0",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.15.2"
+  }
+}
